@@ -2977,6 +2977,10 @@ void InstrumentClipView::adjustNoteParameterValue(int32_t withOffset, int32_t wi
 
 	bool hasPopup = display->hasPopupOfType(PopupType::PROBABILITY) || display->hasPopupOfType(PopupType::ITERANCE);
 
+	bool isFillChange = Buttons::isButtonPressed(deluge::hid::button::SYNC_SCALING)
+	                    && (runtimeFeatureSettings.get(RuntimeFeatureSettingType::SyncScalingAction)
+	                        == RuntimeFeatureStateSyncScalingAction::Fill);
+
 	// If just one press...
 	if (numEditPadPresses == 1) {
 		// Find it
@@ -3023,7 +3027,7 @@ void InstrumentClipView::adjustNoteParameterValue(int32_t withOffset, int32_t wi
 				}
 
 				// If editing, continue edit
-				if (hasPopup || inNoteEditor) {
+				if (hasPopup || inNoteEditor || isFillChange) {
 					Action* action = actionLogger.getNewAction(ActionType::NOTE_EDIT, ActionAddition::ALLOWED);
 					if (!action) {
 						return;
@@ -3067,6 +3071,12 @@ void InstrumentClipView::adjustNoteParameterValue(int32_t withOffset, int32_t wi
 									parameterValue++;
 									parameterHasBeenEdited = true;
 								}
+							}
+							// Wrap around for FILL when at max value
+							else if (parameterValue == parameterMaxValue
+							         && changeType == CORRESPONDING_NOTES_SET_FILL) {
+								parameterValue = parameterMinValue;
+								parameterHasBeenEdited = true;
 							}
 						}
 						// Decrementing
@@ -3243,7 +3253,7 @@ multiplePresses:
 		}
 
 		// If editing, continue edit
-		if (hasPopup || inNoteEditor) {
+		if (hasPopup || inNoteEditor || isFillChange) {
 			Action* action = actionLogger.getNewAction(ActionType::NOTE_EDIT, ActionAddition::ALLOWED);
 			if (!action) {
 				return;
@@ -3271,6 +3281,11 @@ multiplePresses:
 								prevBase = false;
 							}
 						}
+					}
+					// Wrap around for FILL when at max value
+					else if (parameterValue == parameterMaxValue && changeType == CORRESPONDING_NOTES_SET_FILL) {
+						parameterValue = parameterMinValue;
+						parameterHasBeenEdited = true;
 					}
 				}
 				// Decrementing
